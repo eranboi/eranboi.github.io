@@ -1,0 +1,780 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import { getCollection, render, type CollectionEntry } from 'astro:content';
+import WishlistCTA from '../../../components/WishlistCTA.astro';
+import { media, tagClass, wantsWishlist } from '../../../utils/games';
+
+export async function getStaticPaths() {
+  const games = await getCollection('games');
+  return games
+    .filter((game) => game.data.pressKit)
+    .map((game) => ({
+      params: { slug: game.id },
+      props: { game },
+    }));
+}
+
+interface Props {
+  game: CollectionEntry<'games'>;
+}
+
+const { game } = Astro.props as Props;
+const { Content } = await render(game);
+const data = game.data;
+const pk = data.pressKitData || {};
+const wishlist = wantsWishlist(game);
+
+const screenshots = (pk.screenshots ?? []).map(media);
+const gifs = (pk.gifs ?? []).map(media);
+// Older press kits only list a logo and an icon; show them as branding tiles.
+const branding = pk.branding ?? [
+  ...(pk.logo ? [{ src: pk.logo, full: pk.logo, label: 'logo', transparent: true }] : []),
+  ...(pk.icon ? [{ src: pk.icon, full: pk.icon, label: 'icon', transparent: false }] : []),
+];
+
+// ".zip", ".mp4", ... shown next to each download.
+const fileExt = (href: string) => href.match(/\.[a-z0-9]+$/i)?.[0].toLowerCase() ?? '';
+
+const facts = [
+  { label: 'developer', value: pk.developer || data.studio || 'eranboi' },
+  { label: 'location', value: pk.location },
+  { label: 'release date', value: pk.releaseDate || 'TBA' },
+  { label: 'platforms', value: data.platform.join(', ').toUpperCase() },
+  { label: 'genre', value: pk.genre },
+  { label: 'price', value: pk.price },
+  { label: 'languages', value: pk.languages },
+].filter((fact) => fact.value);
+
+const sections = [
+  ['factsheet', true],
+  ['description', true],
+  ['features', true],
+  ['trailer', !!pk.trailerUrl],
+  ['screenshots', screenshots.length > 0],
+  ['gifs', gifs.length > 0],
+  ['branding', branding.length > 0],
+  ['contact', true],
+].filter(([, shown]) => shown).map(([id]) => id as string);
+---
+
+<Layout
+  title={`${data.title} Press Kit | eranboi`}
+  description={`Press kit for ${data.title}: factsheet, description, screenshots, GIFs, logos and contact.`}
+  image={data.cover}
+>
+  <article class="presskit">
+    <a href={`/games/${game.id}`} class="back">← back to {data.title.toLowerCase()}</a>
+
+    {pk.hero ? (
+      <div class="hero">
+        <img class="hero-art" src={pk.hero} alt="" />
+        {pk.heroLogo && <img class="hero-logo" src={pk.heroLogo} alt={data.title} />}
+      </div>
+    ) : null}
+
+    <header class="title">
+      <div>
+        <p class="eyebrow">press kit</p>
+        <h1>{data.title}</h1>
+      </div>
+      <div class="tags">
+        {data.tags.map((tag) => <span class={`tag ${tagClass(tag)}`}>{tag}</span>)}
+      </div>
+    </header>
+
+    <nav class="toc" aria-label="Press kit sections">
+      {sections.map((id) => <a href={`#${id}`}>{id}</a>)}
+    </nav>
+
+    <div class="top-grid">
+      <section id="factsheet" class="card">
+        <h2 class="section-title">factsheet</h2>
+        <dl class="facts">
+          {facts.map((fact) => (
+            <div class="fact">
+              <dt>{fact.label}</dt>
+              <dd>{fact.value}</dd>
+            </div>
+          ))}
+        </dl>
+      </section>
+
+      <aside class="card downloads">
+        <h2 class="section-title">download</h2>
+        {pk.downloads && pk.downloads.length > 0 ? (
+          <ul class="download-list">
+            {pk.downloads.map((file, i) => (
+              <li>
+                <a href={file.href} download class:list={['download', i === 0 && 'primary']}>
+                  <span>{file.label}</span>
+                  <span class="size">{fileExt(file.href)}{file.size ? ` · ${file.size}` : ''} ↓</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <ul class="download-list">
+            {pk.screenshotsZip && <li><a href={pk.screenshotsZip} download class="download"><span>screenshots</span><span class="size">.zip ↓</span></a></li>}
+            {pk.brandingZip && <li><a href={pk.brandingZip} download class="download"><span>branding</span><span class="size">.zip ↓</span></a></li>}
+          </ul>
+        )}
+        <p class="note">All assets are free to use for coverage of {data.title}.</p>
+        {data.steamUrl && (
+          <a href={data.steamUrl} target="_blank" rel="noopener" class="steam">view on steam -></a>
+        )}
+      </aside>
+    </div>
+
+    {wishlist && (
+      <div class="wishlist-slot">
+        <WishlistCTA title={data.title} steamUrl={data.steamUrl!} banner={data.banner} bannerMobile={data.bannerMobile} />
+      </div>
+    )}
+
+    <section id="description" class="section">
+      <h2 class="section-title">description</h2>
+      <div class="copy-block">
+        <div class="copy-head">
+          <span class="copy-label">short</span>
+          <button type="button" class="copy" data-copy="short-desc">copy</button>
+        </div>
+        <p id="short-desc">{data.description}</p>
+      </div>
+      {pk.longDescription && (
+        <div class="copy-block">
+          <div class="copy-head">
+            <span class="copy-label">long</span>
+            <button type="button" class="copy" data-copy="long-desc">copy</button>
+          </div>
+          <p id="long-desc">{pk.longDescription}</p>
+        </div>
+      )}
+    </section>
+
+    <section id="features" class="section">
+      <h2 class="section-title">features</h2>
+      <div class="content">
+        <Content />
+      </div>
+    </section>
+
+    {pk.trailerUrl && (
+      <section id="trailer" class="section">
+        <div class="section-head">
+          <h2 class="section-title">trailer</h2>
+          {pk.trailerFile && (
+            <a href={pk.trailerFile} class="text-link small" download>
+              download trailer (.mp4{pk.trailerSize ? ` · ${pk.trailerSize}` : ''}) ↓
+            </a>
+          )}
+        </div>
+        <div class="video-container">
+          <iframe
+            src={pk.trailerUrl}
+            title={`${data.title} trailer`}
+            frameborder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen
+            loading="lazy"
+          ></iframe>
+        </div>
+      </section>
+    )}
+
+    {screenshots.length > 0 && (
+      <section id="screenshots" class="section">
+        <div class="section-head">
+          <h2 class="section-title">screenshots</h2>
+          {pk.screenshotsZip && <a href={pk.screenshotsZip} class="text-link small" download>download all (.zip) ↓</a>}
+        </div>
+        <div class:list={['media-grid', screenshots.length % 2 === 1 && 'lead-wide']}>
+          {screenshots.map((shot, i) => (
+            <a href={shot.full} target="_blank" rel="noopener" class="media-item" title="Open full resolution">
+              <img src={shot.src} alt={`${data.title} screenshot ${i + 1}`} loading="lazy" />
+              <span class="media-hint">full res ↗</span>
+            </a>
+          ))}
+        </div>
+      </section>
+    )}
+
+    {gifs.length > 0 && (
+      <section id="gifs" class="section">
+        <div class="section-head">
+          <h2 class="section-title">gifs</h2>
+          {pk.gifsZip && <a href={pk.gifsZip} class="text-link small" download>download all (.zip) ↓</a>}
+        </div>
+        <div class="media-grid">
+          {gifs.map((gif) => (
+            <figure class="gif">
+              <a href={gif.full} target="_blank" rel="noopener" class="media-item contain">
+                <img src={gif.src} alt={gif.caption ? `${data.title}: ${gif.caption}` : `${data.title} gameplay GIF`} loading="lazy" />
+              </a>
+              {gif.caption && <figcaption>{gif.caption}</figcaption>}
+            </figure>
+          ))}
+        </div>
+      </section>
+    )}
+
+    {branding.length > 0 && (
+      <section id="branding" class="section">
+        <div class="section-head">
+          <h2 class="section-title">logos & key art</h2>
+          {pk.brandingZip && <a href={pk.brandingZip} class="text-link small" download>download all (.zip) ↓</a>}
+        </div>
+        <div class="media-grid thirds">
+          {branding.map((asset) => (
+            <figure class="gif">
+              <a href={asset.full ?? asset.src} target="_blank" rel="noopener"
+                 class:list={['media-item', 'contain', asset.transparent && 'checker']}>
+                <img src={asset.src} alt={`${data.title} ${asset.label}`} loading="lazy" />
+              </a>
+              <figcaption>{asset.label}</figcaption>
+            </figure>
+          ))}
+        </div>
+      </section>
+    )}
+
+    <section id="contact" class="section contact-grid">
+      <div>
+        <h2 class="section-title">about the developer</h2>
+        <p class="bio">
+          {pk.developerBio || "eranboi is an indie game developer from Turkey. Previously worked as Gameplay Programmer at Blue Goo Games on Space Chef (published by Kwalee, released on PC, PS5, Xbox, Switch)."}
+        </p>
+      </div>
+      <div>
+        <h2 class="section-title">contact</h2>
+        <dl class="facts">
+          <div class="fact">
+            <dt>email</dt>
+            <dd><a class="text-link" href={`mailto:${pk.email || "info@eranboigames.com"}`}>{pk.email || "info@eranboigames.com"}</a></dd>
+          </div>
+          {pk.twitter && (
+            <div class="fact">
+              <dt>x (twitter)</dt>
+              <dd><a class="text-link" href={pk.twitter} target="_blank" rel="noopener">{pk.twitterHandle || "@eranboi_dev"}</a></dd>
+            </div>
+          )}
+          {pk.discord && (
+            <div class="fact">
+              <dt>discord</dt>
+              <dd><a class="text-link" href={pk.discord} target="_blank" rel="noopener">join the server</a></dd>
+            </div>
+          )}
+          {pk.website && (
+            <div class="fact">
+              <dt>website</dt>
+              <dd><a class="text-link" href={pk.website} target="_blank" rel="noopener">{pk.website.replace(/^https?:\/\//, '')}</a></dd>
+            </div>
+          )}
+        </dl>
+        <p class="keys">Review keys available upon request.</p>
+      </div>
+    </section>
+  </article>
+</Layout>
+
+<script>
+  // "copy" buttons next to the descriptions.
+  document.querySelectorAll<HTMLButtonElement>('button.copy').forEach((button) => {
+    button.addEventListener('click', async () => {
+      const text = document.getElementById(button.dataset.copy ?? '')?.textContent?.trim();
+      if (!text) return;
+      try {
+        await navigator.clipboard.writeText(text);
+        button.textContent = 'copied ✓';
+      } catch {
+        button.textContent = 'select & copy';
+      }
+      setTimeout(() => (button.textContent = 'copy'), 1600);
+    });
+  });
+</script>
+
+<style>
+  .presskit {
+    max-width: 960px;
+  }
+
+  /* Hero banner */
+  .hero {
+    position: relative;
+    aspect-ratio: 3.1 / 1;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 2rem;
+    background: var(--surface-2);
+  }
+
+  .hero-art {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .hero::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, transparent 55%, rgba(10, 10, 10, 0.55));
+    pointer-events: none;
+  }
+
+  .hero-logo {
+    position: absolute;
+    top: 50%;
+    left: 58%;
+    width: 40%;
+    transform: translate(-50%, -50%);
+    filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.25));
+    z-index: 1;
+  }
+
+  @media (max-width: 600px) {
+    .hero {
+      aspect-ratio: 16 / 9;
+    }
+    .hero-art {
+      object-position: 20% center;
+    }
+    .hero-logo {
+      left: 62%;
+      width: 58%;
+    }
+  }
+
+  /* Title */
+  .title {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .eyebrow {
+    color: var(--accent);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    margin-bottom: 0.25rem;
+  }
+
+  .title h1 {
+    font-size: clamp(2rem, 5vw, 2.75rem);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+  }
+
+  .tags {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  /* Section jump links */
+  .toc {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding-bottom: 1.5rem;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .toc a {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 0.2rem 0.7rem;
+  }
+
+  .toc a:hover {
+    color: var(--accent);
+    border-color: var(--accent-line);
+    background: var(--accent-soft);
+  }
+
+  /* Factsheet + downloads */
+  .top-grid {
+    display: grid;
+    grid-template-columns: 1.6fr 1fr;
+    gap: 1rem;
+    margin-bottom: 3rem;
+  }
+
+  @media (max-width: 760px) {
+    .top-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .card {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    padding: 1.5rem;
+  }
+
+  .facts {
+    display: grid;
+    gap: 0.7rem;
+  }
+
+  .fact {
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    gap: 1rem;
+  }
+
+  @media (max-width: 480px) {
+    .fact {
+      grid-template-columns: 1fr;
+      gap: 0.1rem;
+    }
+  }
+
+  .fact dt {
+    color: var(--text-dim);
+    font-size: 0.8rem;
+    padding-top: 0.1rem;
+  }
+
+  .fact dd {
+    font-size: 0.88rem;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .downloads {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .download-list {
+    list-style: none;
+    display: grid;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .download {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    font-size: 0.85rem;
+    padding: 0.6rem 0.8rem;
+    border: 1px solid var(--border-strong);
+    border-radius: 2px;
+  }
+
+  .download:hover {
+    border-color: var(--accent-line);
+    background: var(--accent-soft);
+  }
+
+  .download.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #000;
+    font-weight: 600;
+  }
+
+  .download.primary:hover {
+    color: #000;
+    filter: brightness(1.1);
+  }
+
+  .download .size {
+    font-size: 0.72rem;
+    opacity: 0.7;
+    white-space: nowrap;
+  }
+
+  .note {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+
+  .steam {
+    margin-top: auto;
+    padding-top: 1rem;
+    font-size: 0.85rem;
+  }
+
+  .wishlist-slot {
+    margin-bottom: 3rem;
+  }
+
+  /* Sections */
+  .section {
+    margin-bottom: 3rem;
+    padding-bottom: 2.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .section:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
+  .section-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .section-head .section-title {
+    margin-bottom: 0;
+  }
+
+  .text-link.small {
+    font-size: 0.8rem;
+  }
+
+  /* Description */
+  .copy-block {
+    border-left: 2px solid var(--accent-line);
+    padding: 0.25rem 0 0.25rem 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .copy-head {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.4rem;
+  }
+
+  .copy-label {
+    font-size: 0.72rem;
+    color: var(--text);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  .copy {
+    font: inherit;
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    background: none;
+    border: 1px solid var(--border-strong);
+    border-radius: 2px;
+    padding: 0.05rem 0.5rem;
+    cursor: pointer;
+    transition: color 0.2s ease, border-color 0.2s ease;
+  }
+
+  .copy:hover {
+    color: var(--accent);
+    border-color: var(--accent-line);
+  }
+
+  .copy-block p {
+    font-size: 0.9rem;
+    line-height: 1.75;
+    color: var(--text-dim);
+  }
+
+  /* Features (from markdown) */
+  .content {
+    color: var(--text-dim);
+    font-size: 0.9rem;
+    line-height: 1.8;
+  }
+
+  .content :global(p) {
+    margin-bottom: 1rem;
+  }
+
+  .content :global(h2) {
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--text);
+    margin-top: 1.75rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .content :global(ul) {
+    list-style: none;
+    margin-bottom: 1rem;
+  }
+
+  .content :global(li) {
+    padding-left: 1.5rem;
+    position: relative;
+    margin-bottom: 0.5rem;
+  }
+
+  .content :global(li::before) {
+    content: "->";
+    position: absolute;
+    left: 0;
+    color: var(--accent);
+  }
+
+  .content :global(strong) {
+    color: var(--text);
+    font-weight: 500;
+  }
+
+  /* Media */
+  .media-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+
+  .media-grid.thirds {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  /* With an odd number of screenshots the first one spans the row, so none is left alone at the end. */
+  .media-grid.lead-wide > :first-child {
+    grid-column: 1 / -1;
+  }
+
+  @media (max-width: 760px) {
+    .media-grid.thirds {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 520px) {
+    .media-grid,
+    .media-grid.thirds {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .media-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 16 / 9;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    transition: border-color 0.2s ease;
+  }
+
+  .media-item:hover {
+    border-color: var(--accent-line);
+  }
+
+  .media-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.35s var(--ease);
+  }
+
+  .media-item:hover img {
+    transform: scale(1.02);
+  }
+
+  .media-item.contain img {
+    object-fit: contain;
+  }
+
+  .media-item.checker {
+    background-color: #1a1a1a;
+    background-image:
+      linear-gradient(45deg, #222 25%, transparent 25%),
+      linear-gradient(-45deg, #222 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #222 75%),
+      linear-gradient(-45deg, transparent 75%, #222 75%);
+    background-size: 16px 16px;
+    background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+  }
+
+  .media-item.checker img {
+    padding: 8%;
+  }
+
+  .media-hint {
+    position: absolute;
+    right: 0.5rem;
+    bottom: 0.5rem;
+    font-size: 0.68rem;
+    color: #000;
+    background: var(--accent);
+    padding: 0.1rem 0.4rem;
+    border-radius: 2px;
+    opacity: 0;
+    transform: translateY(4px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+
+  .media-item:hover .media-hint,
+  .media-item:focus-visible .media-hint {
+    opacity: 1;
+    transform: none;
+  }
+
+  .gif {
+    margin: 0;
+  }
+
+  .gif figcaption {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    margin-top: 0.5rem;
+  }
+
+  /* Trailer */
+  .video-container {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .video-container iframe {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* About + contact */
+  .contact-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+  }
+
+  @media (max-width: 760px) {
+    .contact-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .bio {
+    font-size: 0.88rem;
+    color: var(--text-dim);
+    line-height: 1.75;
+  }
+
+  .keys {
+    margin-top: 1.25rem;
+    font-size: 0.8rem;
+    color: var(--accent);
+  }
+</style>

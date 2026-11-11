@@ -1,0 +1,365 @@
+---
+interface Props {
+  title: string;
+  description?: string;
+  image?: string;
+}
+
+const defaultDescription = "eranboi - Unity game developer. Maker of Immunica and Feed The Pond. Shipped titles include Space Chef (Kwalee).";
+const { title, description = defaultDescription, image = "/eranboi-pfp.png" } = Astro.props;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const imageUrl = new URL(image, Astro.site);
+const isWideImage = image !== "/eranboi-pfp.png";
+const year = new Date().getFullYear();
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <meta name="keywords" content="Indie Game Developer, Unity Developer, Game Developer, Gameplay Programmer, C#, Incremental Games" />
+    <meta name="author" content="eranboi" />
+    <meta name="theme-color" content="#0a0a0a" />
+
+    <!-- Open Graph / Social -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={imageUrl} />
+    <meta property="og:url" content={canonical} />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content={isWideImage ? "summary_large_image" : "summary"} />
+    <meta name="twitter:site" content="@eranboii" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={imageUrl} />
+
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" type="image/png" href="/eranboi-pfp.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <meta name="generator" content={Astro.generator} />
+    <title>{title}</title>
+  </head>
+  <body>
+    <div class="backdrop" aria-hidden="true"></div>
+    <header class="navbar-wrap">
+      <nav class="navbar container">
+        <a href="/" class="home"><span class="prompt">&gt;</span> eranboi</a>
+        <div class="nav-links">
+          <a href="/games" class:list={[Astro.url.pathname.startsWith('/games') && 'active']}>games</a>
+          <a href="/projects" class:list={[Astro.url.pathname.startsWith('/projects') && 'active']}>projects</a>
+          <a href="/about" class:list={[Astro.url.pathname === '/about' && 'active']}>about</a>
+        </div>
+      </nav>
+    </header>
+    <main class="container">
+      <slot />
+    </main>
+    <footer class="footer container">
+      <span>© {year} eranboi</span>
+      <div class="footer-links">
+        <a href="https://github.com/eranboi" target="_blank" rel="noopener">github</a>
+        <a href="https://x.com/eranboii" target="_blank" rel="noopener">x</a>
+        <a href="mailto:info@eranboigames.com">email</a>
+      </div>
+    </footer>
+  </body>
+</html>
+
+<style is:global>
+  :root {
+    --bg: #0a0a0a;
+    --surface: #0f0f0f;
+    --surface-2: #141414;
+    --border: #1c1c1c;
+    --border-strong: #2c2c2c;
+    --text: #e6e6e6;
+    --text-dim: #8a8a8a;
+    --text-faint: #555;
+    --accent: #00ff88;
+    --accent-soft: rgba(0, 255, 136, 0.08);
+    --accent-line: rgba(0, 255, 136, 0.35);
+    --radius: 4px;
+    --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+
+    /* Status tag colours, shared by every page that lists games. */
+    --tag-released: var(--accent);
+    --tag-demo: #4da6ff;
+    --tag-soon: #facc15;
+    --tag-hold: #ff6b6b;
+    --tag-publisher: #c084fc;
+    --tag-prototype: #fbbf24;
+    --tag-test: #f472b6;
+  }
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  html {
+    font-family: 'JetBrains Mono', monospace;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    scroll-behavior: smooth;
+    scroll-padding-top: 5rem;
+  }
+
+  body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+  }
+
+  ::selection {
+    background: var(--accent);
+    color: #000;
+  }
+
+  img {
+    max-width: 100%;
+    display: block;
+  }
+
+  a {
+    color: var(--text);
+    text-decoration: none;
+    transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+  }
+
+  a:hover {
+    color: var(--accent);
+  }
+
+  :focus-visible {
+    outline: 1px solid var(--accent);
+    outline-offset: 3px;
+  }
+
+  .container {
+    width: 70%;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  @media (max-width: 768px) {
+    .container {
+      width: auto;
+      margin: 0 16px;
+    }
+  }
+
+  /* Section heading used across pages: "// games" */
+  .section-title {
+    font-size: 0.8rem;
+    font-weight: 400;
+    color: var(--text-dim);
+    margin-bottom: 1rem;
+    letter-spacing: 0.08em;
+    text-transform: lowercase;
+  }
+
+  .section-title::before {
+    content: "// ";
+    color: var(--accent);
+  }
+
+  /* Status tags ("released", "coming soon", ...) */
+  .tag {
+    --tag-color: var(--text-dim);
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.7rem;
+    padding: 0.2rem 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--tag-color);
+    border: 1px solid color-mix(in srgb, var(--tag-color) 55%, transparent);
+    background: color-mix(in srgb, var(--tag-color) 8%, transparent);
+    border-radius: 2px;
+    white-space: nowrap;
+  }
+
+  .tag.small {
+    font-size: 0.62rem;
+    padding: 0.12rem 0.4rem;
+  }
+
+  .tag.released { --tag-color: var(--tag-released); }
+  .tag.demo-available { --tag-color: var(--tag-demo); }
+  .tag.coming-soon { --tag-color: var(--tag-soon); }
+  .tag.on-hold { --tag-color: var(--tag-hold); }
+  .tag.published-by-kwalee { --tag-color: var(--tag-publisher); }
+  .tag.prototype { --tag-color: var(--tag-prototype); }
+  .tag.voodoo-test { --tag-color: var(--tag-test); }
+
+  /* Underlined text link: "view on steam ->" */
+  .text-link {
+    display: inline-block;
+    font-size: 0.9rem;
+    color: var(--text);
+    border-bottom: 1px solid var(--border-strong);
+    padding-bottom: 0.2rem;
+  }
+
+  .text-link:hover {
+    border-color: var(--accent);
+  }
+
+  /* Back link at the top of detail pages */
+  .back {
+    display: inline-block;
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    margin-bottom: 2rem;
+  }
+
+  .back:hover {
+    color: var(--text);
+  }
+
+  /* Gentle entrance for page content */
+  main > * {
+    animation: rise 0.5s var(--ease) both;
+  }
+
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation: none !important;
+      transition: none !important;
+      scroll-behavior: auto !important;
+    }
+  }
+</style>
+
+<style>
+  .backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      radial-gradient(ellipse 60% 40% at 50% -10%, rgba(0, 255, 136, 0.07), transparent 70%),
+      radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.045) 1px, transparent 0) 0 0 / 24px 24px;
+    mask-image: linear-gradient(to bottom, #000 0%, #000 45%, transparent 100%);
+  }
+
+  .navbar-wrap {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: rgba(10, 10, 10, 0.72);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 4rem;
+  }
+
+  .navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 0;
+  }
+
+  .navbar .home {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.02em;
+  }
+
+  .navbar .home .prompt {
+    color: var(--accent);
+    margin-right: 0.15rem;
+  }
+
+  .navbar .home:hover {
+    color: var(--accent);
+  }
+
+  .nav-links {
+    display: flex;
+    gap: 2rem;
+  }
+
+  @media (max-width: 480px) {
+    .nav-links {
+      gap: 1.25rem;
+    }
+  }
+
+  .nav-links a {
+    position: relative;
+    font-size: 0.9rem;
+    letter-spacing: 0.05em;
+    color: var(--text-dim);
+  }
+
+  .nav-links a::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -0.35rem;
+    height: 1px;
+    background: var(--accent);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.25s var(--ease);
+  }
+
+  .nav-links a:hover,
+  .nav-links a.active {
+    color: var(--text);
+  }
+
+  .nav-links a.active::after {
+    transform: scaleX(1);
+  }
+
+  main {
+    flex: 1;
+    padding-bottom: 4rem;
+  }
+
+  .footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    padding: 2rem 0;
+    border-top: 1px solid var(--border);
+    font-size: 0.8rem;
+    color: var(--text-faint);
+  }
+
+  .footer-links {
+    display: flex;
+    gap: 1.5rem;
+  }
+
+  .footer-links a {
+    color: var(--text-dim);
+  }
+
+  .footer-links a:hover {
+    color: var(--accent);
+  }
+</style>

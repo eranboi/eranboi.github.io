@@ -1,0 +1,170 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { getCollection, render } from 'astro:content';
+
+export async function getStaticPaths() {
+  const projects = await getCollection('projects');
+  return projects.map((project) => ({
+    params: { slug: project.id },
+    props: { project },
+  }));
+}
+
+const { project } = Astro.props;
+const { Content } = await render(project);
+---
+
+<Layout title={`${project.data.title} | eranboi`}>
+  <article class="project-page">
+    <a href="/projects" class="back">← back to projects</a>
+    
+    <header>
+      <h1>{project.data.title}</h1>
+
+      {project.data.outdated && (
+        <div class="outdated-warning">
+          [!] This is an old project and may no longer work as expected.
+        </div>
+      )}
+
+      <p class="desc">{project.data.description}</p>
+      
+      <div class="meta">
+        <span class="year">{project.data.year}</span>
+        <div class="tech">
+          {project.data.tech.map((t) => (
+            <span class="tag">{t}</span>
+          ))}
+        </div>
+      </div>
+
+      {project.data.github && (
+        <a href={project.data.github} target="_blank" rel="noopener" class="link">
+          view on github ->
+        </a>
+      )}
+    </header>
+
+    <div class="content">
+      <Content />
+    </div>
+  </article>
+</Layout>
+
+<style>
+  .project-page {
+    max-width: 800px;
+  }
+
+  .back {
+    display: inline-block;
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    margin-bottom: 2rem;
+  }
+
+  .back:hover {
+    color: var(--text);
+  }
+
+  h1 {
+    font-size: 2rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+  }
+
+  .outdated-warning {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    background: rgba(255, 107, 107, 0.1);
+    border: 1px solid #ff6b6b;
+    color: #ff6b6b;
+    font-size: 0.85rem;
+    margin-bottom: 1rem;
+  }
+
+  .desc {
+    color: var(--text-dim);
+    font-size: 0.95rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .meta {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .year {
+    color: var(--text-dim);
+    font-size: 0.85rem;
+  }
+
+  .tech {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .tag {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    background: #1a1a1a;
+    color: var(--accent);
+  }
+
+  .link {
+    display: inline-block;
+    font-size: 0.9rem;
+    color: var(--text);
+    border-bottom: 1px solid #333;
+    padding-bottom: 0.25rem;
+    margin-bottom: 3rem;
+  }
+
+  .link:hover {
+    border-color: var(--accent);
+  }
+
+  .content {
+    color: var(--text-dim);
+    font-size: 0.9rem;
+    line-height: 1.8;
+  }
+
+  .content :global(h2) {
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: var(--text);
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+  }
+
+  .content :global(ul) {
+    list-style: none;
+    margin-bottom: 1rem;
+  }
+
+  .content :global(li) {
+    padding-left: 1rem;
+    position: relative;
+    margin-bottom: 0.5rem;
+  }
+
+  .content :global(li::before) {
+    content: "->";
+    position: absolute;
+    left: 0;
+    color: var(--text-dim);
+  }
+
+  .content :global(strong) {
+    color: var(--text);
+    font-weight: 500;
+  }
+
+  .content :global(p) {
+    margin-bottom: 1rem;
+  }
+</style>

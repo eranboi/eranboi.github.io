@@ -1,0 +1,204 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { getCollection, render } from 'astro:content';
+import WishlistCTA from '../../components/WishlistCTA.astro';
+import { tagClass, wantsWishlist } from '../../utils/games';
+
+export async function getStaticPaths() {
+  const games = await getCollection('games');
+  return games.map((game) => ({
+    params: { slug: game.id },
+    props: { game },
+  }));
+}
+
+const { game } = Astro.props;
+const { Content } = await render(game);
+const wishlist = wantsWishlist(game);
+---
+
+<Layout title={`${game.data.title} | eranboi`} description={game.data.description} image={game.data.cover}>
+  <article class="game-page">
+    <a href="/games" class="back">← back to games</a>
+
+    {game.data.cover && (
+      <div class="cover">
+        <img src={game.data.cover} alt={game.data.title} />
+      </div>
+    )}
+
+    <header>
+      <h1>{game.data.title}</h1>
+
+      <div class="tags">
+        {game.data.tags.map((tag) => (
+          <span class={`tag ${tagClass(tag)}`}>{tag}</span>
+        ))}
+      </div>
+
+      <p class="desc">{game.data.description}</p>
+
+      <div class="meta">
+        <span class="role">{game.data.role}{game.data.studio && ` @ ${game.data.studio}`}</span>
+        <span class="platform">{game.data.platform.join(' / ')}</span>
+      </div>
+
+      <div class="links">
+        {game.data.steamUrl && !wishlist && (
+          <a href={game.data.steamUrl} target="_blank" rel="noopener" class="text-link">
+            view on steam ->
+          </a>
+        )}
+
+        {game.data.appStoreUrl && (
+          <a href={game.data.appStoreUrl} target="_blank" rel="noopener" class="text-link">
+            view on app store ->
+          </a>
+        )}
+
+        {game.data.pressKit && (
+          <a href={`/games/${game.id}/presskit`} class="presskit">
+            press kit ->
+          </a>
+        )}
+      </div>
+    </header>
+
+    {wishlist && (
+      <div class="wishlist-slot">
+        <WishlistCTA title={game.data.title} steamUrl={game.data.steamUrl!} banner={game.data.banner} bannerMobile={game.data.bannerMobile} />
+      </div>
+    )}
+
+    <div class="content">
+      <Content />
+    </div>
+  </article>
+</Layout>
+
+<style>
+  .game-page {
+    max-width: 800px;
+  }
+
+  .cover {
+    aspect-ratio: 16 / 9;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 2rem;
+    background: var(--surface-2);
+  }
+
+  .cover img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  h1 {
+    font-size: 2rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    letter-spacing: -0.02em;
+  }
+
+  .tags {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+  }
+
+  .desc {
+    color: var(--text-dim);
+    font-size: 0.95rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 2rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .role {
+    color: var(--text);
+    font-size: 0.9rem;
+  }
+
+  .platform {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  .links {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 3rem;
+  }
+
+  .presskit {
+    font-size: 0.85rem;
+    color: var(--accent);
+    border: 1px solid var(--accent-line);
+    background: var(--accent-soft);
+    padding: 0.4rem 0.8rem;
+    border-radius: 2px;
+  }
+
+  .presskit:hover {
+    background: var(--accent);
+    color: #000;
+  }
+
+  .wishlist-slot {
+    margin-bottom: 3rem;
+  }
+
+  .content {
+    color: var(--text-dim);
+    font-size: 0.9rem;
+    line-height: 1.8;
+  }
+
+  .content :global(h2) {
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: var(--text);
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+  }
+
+  .content :global(ul) {
+    list-style: none;
+    margin-bottom: 1rem;
+  }
+
+  .content :global(li) {
+    padding-left: 1.5rem;
+    position: relative;
+    margin-bottom: 0.5rem;
+  }
+
+  .content :global(li::before) {
+    content: "->";
+    position: absolute;
+    left: 0;
+    color: var(--accent);
+  }
+
+  .content :global(strong) {
+    color: var(--text);
+    font-weight: 500;
+  }
+
+  .content :global(p) {
+    margin-bottom: 1rem;
+  }
+</style>

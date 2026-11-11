@@ -1,0 +1,157 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { getCollection } from 'astro:content';
+import { sortGames, tagClass } from '../../utils/games';
+
+const sortedGames = sortGames(await getCollection('games'));
+---
+
+<Layout title="games | eranboi">
+  <section class="page">
+    <h1>games</h1>
+    <p class="subtitle">game development projects</p>
+
+    <div class="list">
+      {sortedGames.map((game) => (
+        <a href={`/games/${game.id}`} class:list={['game', game.data.cover && 'has-cover']}>
+          {game.data.cover && (
+            <div class="cover">
+              <img src={game.data.cover} alt="" loading="lazy" />
+            </div>
+          )}
+          <div class="body">
+            <div class="header">
+              <h2>{game.data.title}</h2>
+              <div class="tags">
+                {game.data.tags.map((tag) => (
+                  <span class={`tag ${tagClass(tag)}`}>{tag}</span>
+                ))}
+              </div>
+            </div>
+            <p class="desc">{game.data.description}</p>
+            <div class="footer">
+              <span class="role">{game.data.role}{game.data.studio && ` @ ${game.data.studio}`}</span>
+              <span class="platform">{game.data.platform.join(' / ')}</span>
+            </div>
+          </div>
+        </a>
+      ))}
+    </div>
+  </section>
+</Layout>
+
+<style>
+  .page h1 {
+    font-size: 2rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.02em;
+  }
+
+  .subtitle {
+    color: var(--text-dim);
+    font-size: 0.9rem;
+    margin-bottom: 3rem;
+  }
+
+  .list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .game {
+    display: grid;
+    grid-template-columns: 1fr;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    transition: border-color 0.2s ease, background 0.2s ease;
+  }
+
+  .game.has-cover {
+    grid-template-columns: minmax(180px, 280px) 1fr;
+  }
+
+  @media (max-width: 640px) {
+    .game.has-cover {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .game:hover {
+    border-color: var(--border-strong);
+    background: var(--surface);
+    color: var(--text);
+  }
+
+  .cover {
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    background: var(--surface-2);
+  }
+
+  .cover img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.4s var(--ease);
+  }
+
+  .game:hover .cover img {
+    transform: scale(1.03);
+  }
+
+  .body {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .game h2 {
+    font-size: 1rem;
+    font-weight: 500;
+  }
+
+  .tags {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .desc {
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    margin-bottom: 1rem;
+  }
+
+  .footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    margin-top: auto;
+  }
+
+  .role {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+  }
+
+  .platform {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+</style>
